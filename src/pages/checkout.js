@@ -10,12 +10,36 @@ import { useSelector } from "react-redux";
 import ShoppingCheckoutProduct from "../components/ShoppingCheckoutProduct/ShoppingCheckoutProduct";
 import { useSession } from "next-auth/client";
 import Currency from "react-currency-formatter";
+import { loadStripe } from "@stripe/stripe-js";
+import axios from "axios";
+import { toast } from "../components/Toast/Toast";
+const stripePromise = loadStripe(process.env.stripe_public_key);
 
 function checkout() {
   const items = useSelector(selectItems);
   const totalItems = useSelector(selectBasketItemsCount);
   const totalCheckoutAmount = useSelector(selectTotalCheckoutAmount);
   const [session] = useSession();
+
+  const createCheckoutSession = async () => {
+    // initialize stripe
+    const stripe = await stripePromise;
+
+    // connect to backend to create a session
+    const checkoutSession = await axios.post("/api/create-checkout-session", {
+      items: items,
+      email: session.user.email,
+    });
+
+    // redirect the user back to checkout
+    const result = await stripe.redirectToCheckout({
+      sessionId: checkoutSession.data.id,
+    });
+
+    if (result.error) {
+      toast.error(result.error.message);
+    }
+  };
 
   return (
     <div className="bg-gray-100">
@@ -65,7 +89,9 @@ function checkout() {
                 <span className="font-bold"></span>
               </h2>
               <button
+                role="link"
                 disabled={!session}
+                onClick={createCheckoutSession}
                 className={`${session && "button  mt-2"} ${
                   !session && "button-disabled"
                 }`}

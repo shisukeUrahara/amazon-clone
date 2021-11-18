@@ -26,10 +26,6 @@ export const basketSlice = createSlice({
       state.totalItems++;
     },
     removeFromBasket: (state, action) => {
-      console.log(
-        "**@ removefromBasket called with payload , ",
-        action.payload
-      );
       let index = state.items.findIndex(
         (basketItem, i) => basketItem.id == action.payload.id
       );
